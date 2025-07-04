@@ -35,44 +35,46 @@ section .text
         parseStringIntoList:
                 push rbp
                 mov rbp, rsp
+        .parseNumber:
                 xor r8, r8
-                mov byte [rsi], 0 
-        .calculateNumSizeLoop:
+        .getStringNumberSizeLoop:
                 inc r8
-                cmp byte [rdi+r8], ','
-                je .parseNumLoop
-                cmp byte [rdi+r8], 0
-                jne .calculateNumSizeLoop
-                push rdx
-        .parseNumLoop:
-                movzx rax, byte [rdi]
-                sub rax, '0' ; This converts the character digit into its real number
-                push rsi
+                mov al, [rdi + r8]
+                cmp al, ','
+                je .parseStringIntoNumber
+                test al, al
+                jnz .getStringNumberSizeLoop
+        .parseStringIntoNumber:
+                dec r8 ; Yes the size is correct, but remove 1 to make sure last digit is *10^0
+                xor r9, r9
+        .parseStringIntoNumberLoop:
                 push rdi
+                push rsi
                 mov rdi, 10
                 mov rsi, r8
-                dec rsi
-                push rax
-                call power
-                mov rdx, rax
-                pop rax
-                mul rdx
-                pop rdi
+                sub rsi, r9
+                call power ; 10^(r8-r9), r8 starts as r8-1
                 pop rsi
-                add byte [rsi], al 
-                inc rdi
-                dec r8
-                test r8, r8
-                jnz .parseNumLoop
+                pop rdi
+                push rdx
+                mov rdx, rax
+                mov rax, byte [rdi]
+                sub rax, '0'
+                mul rdx ; rax is now actual value
                 pop rdx
-                inc byte [rdx]
+                mov rbx, byte [rdx]
+                add byte [rsi + rbx], rax
+                inc rdi ; string += 1 (next char)
+                inc r9
+                cmp r9, r8
+                jne .parseStringIntoNumberLoop
                 inc rsi
-                cmp byte [rdi], 0
+                mov al, [rdi]
+                test al, al
                 jz .done
+                inc rsi
                 inc rdi
-                mov byte [rsi], 0
-                xor r8, r8
-                jmp .calculateNumSizeLoop
+                jmp .parseNumber
         .done:
                 pop rbp
                 ret
