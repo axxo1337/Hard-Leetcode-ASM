@@ -86,7 +86,7 @@ section .text
         _start:
                 ; Check that argc is 2
                 mov rsi, [rsp]
-                cmp rsi, 2
+                cmp rsi, 3
                 mov rdi, 1
                 jne exit
                 ; Get argv[0] and parse the argument into list1
