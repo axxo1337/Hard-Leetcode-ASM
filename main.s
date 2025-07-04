@@ -43,6 +43,7 @@ section .text
                 je .parseNumLoop
                 cmp byte [rdi+r8], 0
                 jne .calculateNumSizeLoop
+                push rdx
         .parseNumLoop:
                 movzx rax, byte [rdi]
                 sub rax, '0' ; This converts the character digit into its real number
@@ -63,6 +64,8 @@ section .text
                 dec r8
                 test r8, r8
                 jnz .parseNumLoop
+                pop rdx
+                inc byte [rdx]
                 inc rsi
                 cmp byte [rdi], 0
                 jz .done
@@ -74,7 +77,7 @@ section .text
                 pop rbp
                 ret
 
-        ; rbp:listA, rsi:sizeOfListA, rdx:listB, rcx:sizeOfListB
+        ; rdi:listA, rsi:sizeOfListA, rdx:listB, rcx:sizeOfListB
         findMedianOfTwoArrays:
                 push rbp
                 mov rbp, rsp
