@@ -23,4 +23,4 @@ to understand what can be done with Assembly. To "demystify" how it can be learn
 
 ### Build guide
 
-TODO
+In order to build the project you must have [NASM](https://www.nasm.us/) and [LD](https://linux.die.net/man/1/ld). That's it. Run the `build.sh` script and you should end up with a `main` binary file in a generated `build/` directory if the scripts succeeds.

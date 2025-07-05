@@ -58,12 +58,12 @@ section .text
                 pop rdi
                 push rdx
                 mov rdx, rax
-                mov rax, byte [rdi]
+                movzx rax, byte [rdi]
                 sub rax, '0'
                 mul rdx ; rax is now actual value
                 pop rdx
-                mov rbx, byte [rdx]
-                add byte [rsi + rbx], rax
+                movzx rbx, byte [rdx]
+                add byte [rsi + rbx], al
                 inc rdi ; string += 1 (next char)
                 inc r9
                 cmp r9, r8
