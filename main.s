@@ -18,6 +18,7 @@ section .text
         power:
                 push rbp
                 mov rbp, rsp
+                push rdx
                 mov rax, 1
                 test rsi, rsi
                 jz .done
@@ -28,6 +29,7 @@ section .text
                 test rsi, rsi
                 jnz .powerLoop
         .done:
+                pop rdx
                 pop rbp
                 ret
 
@@ -45,35 +47,31 @@ section .text
                 test al, al
                 jnz .getStringNumberSizeLoop
         .parseStringIntoNumber:
-                dec r8 ; Yes the size is correct, but remove 1 to make sure last digit is *10^0
-                xor r9, r9
         .parseStringIntoNumberLoop:
+                dec r8
+                movzx rax, byte [rdi]
+                sub rax, '0'
+                push rax
                 push rdi
                 push rsi
                 mov rdi, 10
                 mov rsi, r8
-                sub rsi, r9
-                call power ; 10^(r8-r9), r8 starts as r8-1
+                call power
                 pop rsi
                 pop rdi
-                push rdx
-                mov rdx, rax
-                movzx rax, byte [rdi]
-                sub rax, '0'
-                mul rdx ; rax is now actual value
-                pop rdx
-                movzx rbx, byte [rdx]
-                add byte [rsi + rbx], al
-                inc rdi ; string += 1 (next char)
-                inc r9
-                cmp r9, r8
-                jne .parseStringIntoNumberLoop
-                inc rsi
-                mov al, [rdi]
+                mov rbx, rax
+                pop rax
+                imul rax, rbx
+                add byte [rsi], al
+                inc rdi
+                test r8, r8
+                jnz .parseStringIntoNumberLoop
+                inc byte [rdx]
+                mov al, byte [rdi]
                 test al, al
                 jz .done
-                inc rsi
                 inc rdi
+                inc rsi
                 jmp .parseNumber
         .done:
                 pop rbp
