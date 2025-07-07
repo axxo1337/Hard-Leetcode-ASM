@@ -81,11 +81,86 @@ section .text
         findMedianOfTwoArrays:
                 push rbp
                 mov rbp, rsp
-
+                ; Check that A < B, otherwise swap and recursive call
+                cmp byte [rsi], byte [rcx]
+                jb .proceed
+                push rdi
+                mov rdi, rdx
+                pop rdx
+                push rsi
+                mov rsi, rcx
+                pop rcx
+                pop rbp
+                ret
+        .proceed:
+                xor r8, r8
+                movzx r9, byte [rsi]
+        .loop:
+                mov rax, r8
+                add rax, r9
+                shr rax, 1 ; (r8 + r9) / 2, the bitshift right divides by 2
+                push rax
+                movzx rax, byte [rsi]
+                add rax, byte [rcx]
+                inc rax
+                shr rax, 1 ; (sizeOfListA + sizeOfListB + 1) / 2
+                sub rax, [rsp]
+                push rax
+        .getALeft:
+                mov rax, [rsp + 8]
+                test rax, rax
+                jnz .mid1Valid
+                mov r10, 0x8000000000000000
+                jmp .getARight
+        .mid1Valid:
+                movzx r10, byte [rdi + rax - 1]
+        .getARight:
+                cmp rax, byte [rsi]
+                jne .mid1Valid2
+                mov r11, 0x7FFFFFFFFFFFFFFF
+                jmp .getBLeft
+        .mid1Valid2:
+                movzx r11, byte [rdi + rax]
+        .getBLeft:
+                mov rax, [rsp]
+                test rax, rax
+                jnz .mid2Valid
+                mov r12, 0x8000000000000000
+                jmp .getBRight
+        .mid2Valid:
+                movzx r12, byte [rdx + rax - 1]
+        .getBRight:
+                cmp rax, byte [rcx]
+                jne .mid2Valid2
+                mov r13, 0x7FFFFFFFFFFFFFFF
+                jmp .finalize
+        .mid2Valid2:
+                movzx r13, byte [rdx + rax]
+        .finalize:
+                cmp r10, r13
+                jg .invalidPartition
+                cmp r12, r11
+                jg .invalidPartition
+                ; return partition
+        .invalidPartition:
+                ; While r8 <= r9 keep going
+                cmp r8, r9
+                jg .done
+                cmp r10, r13
+                add rsp, 16 ; Make sure to re-align the stack because of the two pushes
+                jg .high
+                mov r8, [rsp + 8]
+                inc r8
+                jmp .loop
+        .high:
+                mov r9, [rsp + 8]
+                dec r9
+                jmp .loop
+        .done:
                 pop rbp
                 ret
 
-        ; [rsp]:argc, [rsp+8]:argv
+        ; rsp:argc, rsp+8:argv
         _start:
                 ; Check that argc is 2
                 mov rsi, [rsp]
