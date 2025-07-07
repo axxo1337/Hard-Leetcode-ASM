@@ -77,19 +77,43 @@ section .text
                 pop rbp
                 ret
 
-        ; rdi:listA, rsi:sizeOfListA, rdx:listB, rcx:sizeOfListB
+        ; rax:valueA, rdx:valueB -> rax
+        min:
+                push rbp
+                mov rbp, rsp
+                cmp rax, rdx
+                jbe .done
+                mov rax, rdx
+        .done:
+                pop rbp
+                ret
+
+        ; rax:valueA, rdx:valueB -> rax
+        max:
+                push rbp
+                mov rbp, rsp
+                cmp rax, rdx
+                jge .done
+                mov rax, rdx
+        .done:
+                pop rbp
+                ret
+
+        ; rdi:listA, rsi:sizeOfListA, rdx:listB, rcx:sizeOfListB -> xmm0
         findMedianOfTwoArrays:
                 push rbp
                 mov rbp, rsp
                 ; Check that A < B, otherwise swap and recursive call
-                cmp byte [rsi], byte [rcx]
+                mov al, byte [rcx]
+                cmp byte [rsi], al
                 jb .proceed
                 push rdi
-                mov rdi, rdx
-                pop rdx
                 push rsi
+                mov rdi, rdx
                 mov rsi, rcx
+                pop rdx
                 pop rcx
+                call findMedianOfTwoArrays
                 pop rbp
                 ret
         .proceed:
@@ -101,7 +125,8 @@ section .text
                 shr rax, 1 ; (r8 + r9) / 2, the bitshift right divides by 2
                 push rax
                 movzx rax, byte [rsi]
-                add rax, byte [rcx]
+                movzx r14, byte [rcx]
+                add rax, r14
                 inc rax
                 shr rax, 1 ; (sizeOfListA + sizeOfListB + 1) / 2
                 sub rax, [rsp]
@@ -115,7 +140,8 @@ section .text
         .mid1Valid:
                 movzx r10, byte [rdi + rax - 1]
         .getARight:
-                cmp rax, byte [rsi]
+                movzx r14, byte [rsi]
+                cmp rax, r14
                 jne .mid1Valid2
                 mov r11, 0x7FFFFFFFFFFFFFFF
                 jmp .getBLeft
@@ -130,7 +156,8 @@ section .text
         .mid2Valid:
                 movzx r12, byte [rdx + rax - 1]
         .getBRight:
-                cmp rax, byte [rcx]
+                movzx r14, byte [rcx]
+                cmp rax, r14
                 jne .mid2Valid2
                 mov r13, 0x7FFFFFFFFFFFFFFF
                 jmp .finalize
@@ -141,13 +168,36 @@ section .text
                 jg .invalidPartition
                 cmp r12, r11
                 jg .invalidPartition
-                ; return partition
+                movzx rax, byte [rsi]
+                movzx rbx, byte [rcx]
+                add rax, rbx 
+                test rax, 1
+                jnz .oddCase
+                mov rax, r10
+                mov rdx, r12
+                call max
+                push rax
+                mov rax, r11
+                mov rdx, r13
+                call min
+                pop rdx
+                add rax, rdx
+                cvtsi2sd xmm0, rax
+                mov rax, 2
+                cvtsi2sd xmm1, rax
+                divsd xmm0, xmm1
+                jmp .done
+        .oddCase:
+                mov rax, r10
+                mov rdx, r12
+                call max
+                cvtsi2sd xmm0, rax
+                jmp .done
         .invalidPartition:
                 ; While r8 <= r9 keep going
                 cmp r8, r9
                 jg .done
                 cmp r10, r13
-                add rsp, 16 ; Make sure to re-align the stack because of the two pushes
                 jg .high
                 mov r8, [rsp + 8]
                 inc r8
@@ -157,6 +207,7 @@ section .text
                 dec r9
                 jmp .loop
         .done:
+                add rsp, 16 ; Make sure to re-align the stack because of the two pushes   
                 pop rbp
                 ret
 
