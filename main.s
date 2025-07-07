@@ -9,6 +9,98 @@ section .bss
         list2Size: resb 1
 
 section .text
+        ; rdi:chracter
+        printChar:
+                push rbp
+                mov rbp, rsp
+                push rdi
+                mov rax, 1   ; sys_write
+                mov rdi, 1   ; stdout
+                mov rsi, rsp ; character
+                mov rdx, 1   ; 1 byte
+                syscall
+                pop rdi
+                pop rbp
+                ret
+
+        ; rdi:number
+        printNumber:
+                push rbp
+                mov rbp, rsp
+                push rbx
+                push rcx
+                push rdx
+                test rdi, rdi
+                jnz .convert
+                mov rdi, '0'
+                call printChar
+                jmp .done
+        .convert:
+                mov rax, rdi
+                mov rbx, 10
+                mov rcx, 0
+        .convertLoop:
+                xor rdx, rdx
+                div rbx
+                add rdx, '0'
+                push rdx
+                inc rcx
+                test rax, rax
+                jnz .convertLoop
+   
+        .printLoop:
+                pop rdi
+                call printChar
+                dec rcx
+                jnz .printLoop
+   
+        .done:
+                pop rdx
+                pop rcx
+                pop rbx
+                pop rbp
+                ret
+
+        ; xmm0:numberToPrint
+        printFloat:
+                push rbp
+                mov rbp, rsp
+                sub rsp, 32
+                movq rax, xmm0
+                mov rbx, 0x8000000000000000
+                test rax, rbx
+                jz .positive
+                mov rdi, '-'
+                call printChar
+                movq xmm1, rbx
+                xorpd xmm0, xmm1
+        .positive:
+                cvttsd2si rax, xmm0
+                cvtsi2sd xmm1, rax
+                subsd xmm0, xmm1
+                mov rdi, rax
+                call printNumber
+                mov rdi, '.'
+                call printChar
+                mov rax, 1000
+                cvtsi2sd xmm1, rax
+                mulsd xmm0, xmm1
+                cvttsd2si rax, xmm0
+                cmp rax, 100
+                jge .print_decimals
+                mov rdi, '0'
+                call printChar
+                cmp rax, 10
+                jge .print_decimals
+                mov rdi, '0'
+                call printChar
+        .print_decimals:
+                mov rdi, rax
+                call printNumber
+                add rsp, 32
+                pop rbp
+                ret
+
         ; rdi:code
         exit:
                 mov rax, 60
@@ -130,7 +222,6 @@ section .text
                 inc rax
                 shr rax, 1 ; (sizeOfListA + sizeOfListB + 1) / 2
                 sub rax, [rsp]
-                push rax
         .getALeft:
                 mov rax, [rsp + 8]
                 test rax, rax
