@@ -8,99 +8,10 @@ section .bss
         list2: resb 256
         list2Size: resb 1
 
+section .data
+        formatString: db "%f", 10, 0
+
 section .text
-        ; rdi:chracter
-        printChar:
-                push rbp
-                mov rbp, rsp
-                push rdi
-                mov rax, 1   ; sys_write
-                mov rdi, 1   ; stdout
-                mov rsi, rsp ; character
-                mov rdx, 1   ; 1 byte
-                syscall
-                pop rdi
-                pop rbp
-                ret
-
-        ; rdi:number
-        printNumber:
-                push rbp
-                mov rbp, rsp
-                push rbx
-                push rcx
-                push rdx
-                test rdi, rdi
-                jnz .convert
-                mov rdi, '0'
-                call printChar
-                jmp .done
-        .convert:
-                mov rax, rdi
-                mov rbx, 10
-                mov rcx, 0
-        .convertLoop:
-                xor rdx, rdx
-                div rbx
-                add rdx, '0'
-                push rdx
-                inc rcx
-                test rax, rax
-                jnz .convertLoop
-   
-        .printLoop:
-                pop rdi
-                call printChar
-                dec rcx
-                jnz .printLoop
-   
-        .done:
-                pop rdx
-                pop rcx
-                pop rbx
-                pop rbp
-                ret
-
-        ; xmm0:numberToPrint
-        printFloat:
-                push rbp
-                mov rbp, rsp
-                sub rsp, 32
-                movq rax, xmm0
-                mov rbx, 0x8000000000000000
-                test rax, rbx
-                jz .positive
-                mov rdi, '-'
-                call printChar
-                movq xmm1, rbx
-                xorpd xmm0, xmm1
-        .positive:
-                cvttsd2si rax, xmm0
-                cvtsi2sd xmm1, rax
-                subsd xmm0, xmm1
-                mov rdi, rax
-                call printNumber
-                mov rdi, '.'
-                call printChar
-                mov rax, 1000
-                cvtsi2sd xmm1, rax
-                mulsd xmm0, xmm1
-                cvttsd2si rax, xmm0
-                cmp rax, 100
-                jge .print_decimals
-                mov rdi, '0'
-                call printChar
-                cmp rax, 10
-                jge .print_decimals
-                mov rdi, '0'
-                call printChar
-        .print_decimals:
-                mov rdi, rax
-                call printNumber
-                add rsp, 32
-                pop rbp
-                ret
-
         ; rdi:code
         exit:
                 mov rax, 60
@@ -195,10 +106,11 @@ section .text
         findMedianOfTwoArrays:
                 push rbp
                 mov rbp, rsp
-                ; Check that A < B, otherwise swap and recursive call
-                mov al, byte [rcx]
-                cmp byte [rsi], al
-                jb .proceed
+                sub rsp, 16
+                movzx rax, byte [rsi]
+                movzx rbx, byte [rcx]
+                cmp rax, rbx
+                jbe .proceed
                 push rdi
                 push rsi
                 mov rdi, rdx
@@ -206,62 +118,66 @@ section .text
                 pop rdx
                 pop rcx
                 call findMedianOfTwoArrays
+                add rsp, 16
                 pop rbp
                 ret
         .proceed:
                 xor r8, r8
                 movzx r9, byte [rsi]
+                
         .loop:
+                cmp r8, r9
+                jg .done
                 mov rax, r8
                 add rax, r9
-                shr rax, 1 ; (r8 + r9) / 2, the bitshift right divides by 2
-                push rax
-                movzx rax, byte [rsi]
+                shr rax, 1
+                mov [rsp], rax
+                movzx rbx, byte [rsi]
                 movzx r14, byte [rcx]
-                add rax, r14
-                inc rax
-                shr rax, 1 ; (sizeOfListA + sizeOfListB + 1) / 2
-                sub rax, [rsp]
+                add rbx, r14
+                inc rbx
+                shr rbx, 1
+                sub rbx, rax
+                mov [rsp + 8], rbx
         .getALeft:
-                mov rax, [rsp + 8]
                 test rax, rax
-                jnz .mid1Valid
-                mov r10, 0x8000000000000000
-                jmp .getARight
-        .mid1Valid:
+                jz .setALeftMin
                 movzx r10, byte [rdi + rax - 1]
+                jmp .getARight
+        .setALeftMin:
+                mov r10, 0
         .getARight:
                 movzx r14, byte [rsi]
                 cmp rax, r14
-                jne .mid1Valid2
-                mov r11, 0x7FFFFFFFFFFFFFFF
-                jmp .getBLeft
-        .mid1Valid2:
+                jae .setARightMax
                 movzx r11, byte [rdi + rax]
+                jmp .getBLeft
+        .setARightMax:
+                mov r11, 255
         .getBLeft:
-                mov rax, [rsp]
-                test rax, rax
-                jnz .mid2Valid
-                mov r12, 0x8000000000000000
+                mov rbx, [rsp + 8] 
+                test rbx, rbx
+                jz .setBLeftMin
+                movzx r12, byte [rdx + rbx - 1]
                 jmp .getBRight
-        .mid2Valid:
-                movzx r12, byte [rdx + rax - 1]
+        .setBLeftMin:
+                mov r12, 0
         .getBRight:
                 movzx r14, byte [rcx]
-                cmp rax, r14
-                jne .mid2Valid2
-                mov r13, 0x7FFFFFFFFFFFFFFF
-                jmp .finalize
-        .mid2Valid2:
-                movzx r13, byte [rdx + rax]
-        .finalize:
+                cmp rbx, r14
+                jae .setBRightMax
+                movzx r13, byte [rdx + rbx]
+                jmp .checkPartition
+        .setBRightMax:
+                mov r13, 255
+        .checkPartition:
                 cmp r10, r13
-                jg .invalidPartition
+                jg .adjustHigh
                 cmp r12, r11
-                jg .invalidPartition
+                jg .adjustLow
                 movzx rax, byte [rsi]
                 movzx rbx, byte [rcx]
-                add rax, rbx 
+                add rax, rbx
                 test rax, 1
                 jnz .oddCase
                 mov rax, r10
@@ -284,21 +200,16 @@ section .text
                 call max
                 cvtsi2sd xmm0, rax
                 jmp .done
-        .invalidPartition:
-                ; While r8 <= r9 keep going
-                cmp r8, r9
-                jg .done
-                cmp r10, r13
-                jg .high
-                mov r8, [rsp + 8]
+        .adjustLow:
+                mov r8, [rsp]
                 inc r8
                 jmp .loop
-        .high:
-                mov r9, [rsp + 8]
+        .adjustHigh:
+                mov r9, [rsp]
                 dec r9
                 jmp .loop
         .done:
-                add rsp, 16 ; Make sure to re-align the stack because of the two pushes   
+                add rsp, 16
                 pop rbp
                 ret
 
