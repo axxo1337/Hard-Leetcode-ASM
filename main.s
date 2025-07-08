@@ -2,20 +2,112 @@ bits 64
 
 global _start
 
+section .data
+        dotChar: db '.'
+        newline: db 10
+
 section .bss
         list1: resb 256
         list1Size: resb 1
         list2: resb 256
         list2Size: resb 1
-
-section .data
-        formatString: db "%f", 10, 0
+        buffer: resb 32
 
 section .text
         ; rdi:code
         exit:
                 mov rax, 60
                 syscall
+
+        printFloat:
+                push rbp
+                mov rbp, rsp
+                sub rsp, 16
+                movq xmm0, rax
+                cvttsd2si rbx, xmm0
+                cvtsi2sd xmm1, rbx
+                subsd xmm0, xmm1
+                mov rdi, rbx
+                call printInteger
+                mov rax, 10
+                cvtsi2sd xmm2, rax
+                mulsd xmm0, xmm2
+                cvttsd2si rcx, xmm0
+                test rcx, rcx
+                jz .printNewline
+                push rcx
+                mov rax, 1
+                mov rdi, 1
+                mov rsi, dotChar
+                mov rdx, 1
+                syscall
+                pop rcx
+                add rcx, '0'
+                mov [buffer], cl
+                mov rax, 1
+                mov rdi, 1
+                mov rsi, buffer
+                mov rdx, 1
+                syscall
+        .printNewline:
+                mov rax, 1
+                mov rdi, 1
+                mov rsi, newline
+                mov rdx, 1
+                syscall
+                add rsp, 16
+                pop rbp
+                ret
+
+        printInteger:
+                push rbp
+                mov rbp, rsp
+                test rdi, rdi
+                jnz .nonZero
+                mov byte [buffer], '0'
+                mov rax, 1
+                mov rdi, 1
+                mov rsi, buffer
+                mov rdx, 1
+                syscall
+                pop rbp
+                ret
+        .nonZero:
+                test rdi, rdi
+                jns .positive
+                neg rdi
+                mov byte [buffer], '-'
+                mov rax, 1
+                push rdi
+                mov rdi, 1
+                mov rsi, buffer
+                mov rdx, 1
+                syscall
+                pop rdi
+        .positive:
+                lea rsi, [buffer + 31]
+                mov byte [rsi], 0
+                dec rsi
+                mov rax, rdi
+                mov rbx, 10
+        .convertLoop:
+                xor rdx, rdx
+                div rbx
+                add dl, '0'
+                mov [rsi], dl
+                dec rsi
+                test rax, rax
+                jnz .convertLoop
+                inc rsi
+                mov rcx, rsi
+                lea rdx, [buffer + 31]
+                sub rdx, rsi
+                mov rax, 1
+                mov rdi, 1
+                mov rsi, rcx
+                syscall
+                pop rbp
+                ret
 
         ; rdi:base, rsi:power -> rax
         power:
@@ -120,11 +212,10 @@ section .text
                 call findMedianOfTwoArrays
                 add rsp, 16
                 pop rbp
-                ret
+                ret  
         .proceed:
                 xor r8, r8
                 movzx r9, byte [rsi]
-                
         .loop:
                 cmp r8, r9
                 jg .done
@@ -237,5 +328,7 @@ section .text
                 lea rdx, [list2]
                 lea rcx, [list2Size]
                 call findMedianOfTwoArrays
+                movq rax, xmm0
+                call printFloat
                 mov rdi, 0
                 jmp exit
