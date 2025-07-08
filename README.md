@@ -19,7 +19,7 @@ to understand what can be done with Assembly. To "demystify" how it can be learn
   - [Universal Assembly Syntax Highlighting Addon](https://github.com/haxo-games/Universal-Assembly-Syntax-Highlighting) (Addon for assembly syntax highlighting on VSCode)
 - [Adobe Premiere Pro](https://www.adobe.com/products/premiere.html) (Cuts, sound effects and some animations)
 - [Adobe After Effects](https://www.adobe.com/ca/products/aftereffects.html) (Most animations)
-- [Figma (Illustrations)](https://www.figma.com/best-practices/team-file-organization)
+- [Figma](https://www.figma.com/best-practices/team-file-organization) (Illustrations)
 
 ### Build guide
 
