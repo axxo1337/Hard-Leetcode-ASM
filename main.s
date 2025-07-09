@@ -311,13 +311,13 @@ section .text
                 cmp rsi, 3
                 mov rdi, 1
                 jne exit
-                ; Get argv[0] and parse the argument into list1
+                ; Get argv[1] and parse the argument into list1
                 lea rdx, [rsp+8]
                 mov rdi, [rdx+8]
                 lea rsi, [list1]
                 lea rdx, [list1Size]
                 call parseStringIntoList
-                ; Get argv[1] and parse the argument into list2
+                ; Get argv[2] and parse the argument into list2
                 lea rdx, [rsp+8]
                 mov rdi, [rdx+16]
                 lea rsi, [list2]
