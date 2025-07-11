@@ -306,7 +306,7 @@ section .text
 
         ; rsp:argc, rsp+8:argv
         _start:
-                ; Check that argc is 2
+                ; Check that argc is 3
                 mov rsi, [rsp]
                 cmp rsi, 3
                 mov rdi, 1
