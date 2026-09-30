@@ -2,7 +2,7 @@
 
 ## What is this?
 
-I made a video (todo link to the video when published) about solving a hard Leetcode challenge in assembly. In this repository is the full code I may have showcased throughout 
+I made [a video](https://youtu.be/BkV8oAdrXOU?si=lbWXdOyQPKxJ6K09) about solving a hard Leetcode challenge in assembly. In this repository is the full code I may have showcased throughout 
 said video with some potential further improvements. The goal of this video was a little bit just to entertain, but also to get some people
 to understand what can be done with Assembly. To "demystify" how it can be learned and practiced.
 
